@@ -59,6 +59,33 @@ flowchart LR
 - 데이터를 바꾸는 도구는 **요약 → 사용자 확인 → 실행** 2단계로만 동작합니다.
 - 확인 단계에서 넘어온 내용이 바뀌지 않았는지 서명(HMAC)으로 검증합니다.
 
+## 예제 코드
+
+MCP 서버 구조를 **독립적으로 다시 구현한 최소 예제**입니다. 회사 코드가 아니며, 업무 도구 대신 표준 오브젝트(Account, Task)를 쓰는 도구 두 개를 넣었습니다.
+
+| 파일 | 역할 |
+|---|---|
+| [`McpServer.cls`](force-app/main/default/classes/McpServer.cls) | Apex REST MCP 서버. JSON-RPC 단건 · 묶음, 알림(202), `initialize` 프로토콜 협상, `tools/list`, `tools/call`, 미인증 요청에 401 + `WWW-Authenticate`, RFC 9728 메타데이터(`/prm`) |
+| [`McpTool.cls`](force-app/main/default/classes/McpTool.cls) · [`McpToolRegistry.cls`](force-app/main/default/classes/McpToolRegistry.cls) | 도구 인터페이스와 등록 목록 — 도구 추가는 클래스 하나 |
+| [`AccountSearchTool.cls`](force-app/main/default/classes/AccountSearchTool.cls) | 읽기 도구. 사용자 권한(`WITH USER_MODE`)으로 조회 |
+| [`CreateFollowUpTaskTool.cls`](force-app/main/default/classes/CreateFollowUpTaskTool.cls) | 쓰기 도구. `confirmed=false` 로 요약 → 사용자 동의 → `confirmed=true` 로 실행 |
+| [`McpServer_Test.cls`](force-app/main/default/classes/McpServer_Test.cls) | 테스트 11개 — 프로토콜 협상, 도구 실행, 쓰기 확인 2단계, 오류 코드, 알림 · 묶음, OAuth 탐색 |
+
+```json
+POST /services/apexrest/mcp
+{"jsonrpc":"2.0","id":1,"method":"tools/call",
+ "params":{"name":"search_accounts","arguments":{"keyword":"Acme"}}}
+```
+
+### 직접 실행
+
+```bash
+sf org create scratch -f config/project-scratch-def.json -a mcp-demo
+sf project deploy start -o mcp-demo -d force-app --test-level RunLocalTests
+```
+
+스크래치 org 에서 테스트 11개 통과, 커버리지 95% (2026-10-30 확인).
+
 ## 배운 점
 
 - LLM 기능은 모델보다 **도구 설계, 권한, 확인 절차**가 품질을 좌우한다는 것

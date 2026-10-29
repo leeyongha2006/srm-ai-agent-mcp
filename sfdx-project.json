@@ -1,0 +1,6 @@
+{
+    "packageDirectories": [{ "path": "force-app", "default": true }],
+    "name": "srm-ai-agent-mcp",
+    "namespace": "",
+    "sourceApiVersion": "62.0"
+}
